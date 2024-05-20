@@ -1,6 +1,6 @@
 // Create module, and re-export it
-mod create_window;
-pub use create_window::*;
+mod window;
+pub use window::*;
 
 pub struct Window {
     pub width: u32,
