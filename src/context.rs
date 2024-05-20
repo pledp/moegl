@@ -7,9 +7,9 @@ pub struct Context {
 }
 
 impl Context {
-    pub(self) fn new(settings: &ContextBuilder) -> Result<Self, &'static str> {
+    pub(self) fn new(settings: ContextBuilder) -> Result<Self, &'static str> {
         Ok(Self {
-            title: settings.title.clone(),
+            title: settings.title,
             width: settings.width,
             height: settings.height,
         })
@@ -46,7 +46,7 @@ impl ContextBuilder {
         }
     }
 
-    pub fn build(&self) -> Result<Context, &'static str> {
+    pub fn build(self) -> Result<Context, &'static str> {
         Context::new(self)
     }
 }

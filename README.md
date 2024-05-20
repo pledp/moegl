@@ -1,4 +1,4 @@
-# mögl
+# moegl
 
 Testing out Rust things.
 
