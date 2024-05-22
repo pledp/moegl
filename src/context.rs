@@ -5,6 +5,8 @@ pub enum MoeglError {
     ContextError,
 
     WindowError,
+
+    AppError,
 }
 
 /// Context for the application
@@ -18,12 +20,14 @@ pub struct Context {
 
 impl Context {
     pub(self) fn new(settings: ContextBuilder) -> Result<Self, MoeglError> {
+        let app = settings.app.ok_or(MoeglError::AppError)?;
+
         Ok(Self {
             title: settings.title,
             width: settings.width,
             height: settings.height,
 
-            app: settings.app.unwrap(),
+            app: app,
         })
     }
 
