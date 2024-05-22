@@ -1,44 +1,55 @@
 use crate::app::App;
 
+#[derive(Debug)]
+pub enum MoeglError {
+    ContextError,
+
+    WindowError,
+}
+
+/// Context for the application
 pub struct Context {
     title: String,
     width: u32,
-    height: u32,    
+    height: u32,
+    
+    app: Box<dyn App>,
 }
 
 impl Context {
-    pub(self) fn new(settings: ContextBuilder) -> Result<Self, &'static str> {
+    pub(self) fn new(settings: ContextBuilder) -> Result<Self, MoeglError> {
         Ok(Self {
             title: settings.title,
             width: settings.width,
             height: settings.height,
+
+            app: settings.app.unwrap(),
         })
     }
 
-    pub fn run<T>(&mut self, app: T) 
-    where
-        T: App,
+    pub fn run(&mut self) 
     {
-        app.init();
-        app.update();
+        self.app.init();
+        self.app.update();
         println!("Running!");
+        println!("{}", self.title);
     }
 }
 
 
+/// Builder for context
 pub struct ContextBuilder {
     title: String,
     width: u32,
-    height: u32,    
+    height: u32,
+
+    app: Option<Box<dyn App>>,
 }
 
 impl ContextBuilder {
-    pub fn new<S>(title: S, window_width: u32, window_height: u32) -> Self 
-    where 
-        S: Into<String>,    
-    {
+    pub fn new(title: &str, window_width: u32, window_height: u32) -> Self {
         Self {
-            title: title.into(),
+            title: title.to_string(),
             width: window_width,
             height: window_height,
             
@@ -46,7 +57,16 @@ impl ContextBuilder {
         }
     }
 
-    pub fn build(self) -> Result<Context, &'static str> {
+    /// Add app to builder
+    pub fn add_app<A>(mut self, app: A) -> Self 
+    where
+        A: App + 'static,
+    {
+        self.app = Some(Box::new(app));
+        self
+    }
+
+    pub fn build(self) -> Result<Context, MoeglError> {
         Context::new(self)
     }
 }
@@ -57,6 +77,7 @@ impl Default for ContextBuilder {
             title: "mogl".into(),
             width: 1280,
             height: 720,
+            app: None,
         }
     }
 }

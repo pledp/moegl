@@ -23,7 +23,8 @@ mod tests {
         }
 
         ContextBuilder::new("mogl test", 1280, 720)
+            .add_app(UserApp{})
             .build().expect("Failed")
-            .run(UserApp{});
+            .run();
     }
 }
