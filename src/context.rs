@@ -1,76 +1,57 @@
 use crate::app::App;
+use crate::error::MoeglError;
 
-#[derive(Debug)]
-pub enum MoeglError {
-    ContextError,
-
-    WindowError,
-
-    AppError,
-}
 
 /// Context for the application
-pub struct Context {
-    title: String,
+pub struct Context<'a> {
+    title: &'a String,
     width: u32,
     height: u32,
-    
-    app: Box<dyn App>,
 }
 
-impl Context {
-    pub(self) fn new(settings: ContextBuilder) -> Result<Self, MoeglError> {
-        let app = settings.app.ok_or(MoeglError::AppError)?;
-
+impl<'a> Context<'a> {
+    pub(self) fn new(settings: &'a ContextBuilder) -> Result<Self, MoeglError> {
         Ok(Self {
-            title: settings.title,
+            title: &settings.title,
             width: settings.width,
             height: settings.height,
-
-            app: app,
         })
     }
 
-    pub fn run(&mut self) 
+    pub fn run<A>(&mut self, app: &A)
+    where
+        A: App,
     {
-        self.app.init();
-        self.app.update();
+        app.init();
+        app.update();
         println!("Running!");
         println!("{}", self.title);
     }
 }
-
 
 /// Builder for context
 pub struct ContextBuilder {
     title: String,
     width: u32,
     height: u32,
-
-    app: Option<Box<dyn App>>,
 }
 
 impl ContextBuilder {
-    pub fn new(title: &str, window_width: u32, window_height: u32) -> Self {
+    pub fn new<S>(title: S, window_width: u32, window_height: u32) -> Self 
+    where
+        S: Into<String>,
+    {
         Self {
-            title: title.to_string(),
+            title: title.into(),
             width: window_width,
             height: window_height,
-            
+
             ..Self::default()
         }
     }
 
-    /// Add app to builder
-    pub fn add_app<A>(mut self, app: A) -> Self 
-    where
-        A: App + 'static,
-    {
-        self.app = Some(Box::new(app));
-        self
-    }
-
-    pub fn build(self) -> Result<Context, MoeglError> {
+    /// Build context
+    pub fn build(&self) -> Result<Context, MoeglError> {
         Context::new(self)
     }
 }
@@ -81,7 +62,6 @@ impl Default for ContextBuilder {
             title: "mogl".into(),
             width: 1280,
             height: 720,
-            app: None,
         }
     }
 }

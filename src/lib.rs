@@ -1,13 +1,10 @@
-pub mod window;
 pub mod app;
 pub mod context;
+pub mod error;
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        context::ContextBuilder,
-        app::*,
-    };
+    use crate::{app::*, context::ContextBuilder};
 
     #[test]
     fn test_app() {
@@ -21,10 +18,32 @@ mod tests {
                 println!("update");
             }
         }
+        
+        let builder = ContextBuilder::new("mogl test", 1280, 720);
+        let result = builder.build();
 
+        match result {
+            Ok(mut context) => context.run(&UserApp{}),
+            Err(e) => println!("Error"),
+        }
+    }
+
+    #[test]
+    fn test_app_2() {
+        struct UserApp {}
+        impl App for UserApp {
+            fn init(&self) {
+                println!("init");
+            }
+
+            fn update(&self) {
+                println!("update");
+            }
+        }
+        
         ContextBuilder::new("mogl test", 1280, 720)
-            .add_app(UserApp{})
-            .build().expect("Failed")
-            .run();
+        .build().unwrap()
+        .run(&UserApp{});
+
     }
 }
