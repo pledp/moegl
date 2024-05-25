@@ -3,16 +3,16 @@ use crate::error::MoeglError;
 
 
 /// Context for the application
-pub struct Context<'a> {
-    title: &'a String,
+pub struct Context {
+    title: String,
     width: u32,
     height: u32,
 }
 
-impl<'a> Context<'a> {
-    pub(self) fn new(settings: &'a ContextBuilder) -> Result<Self, MoeglError> {
+impl Context {
+    pub(self) fn new(settings: &ContextBuilder) -> Result<Self, MoeglError> {
         Ok(Self {
-            title: &settings.title,
+            title: settings.title.to_owned(),
             width: settings.width,
             height: settings.height,
         })

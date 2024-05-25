@@ -19,12 +19,11 @@ mod tests {
             }
         }
         
-        let builder = ContextBuilder::new("mogl test", 1280, 720);
-        let result = builder.build();
+        let result = ContextBuilder::new("mogl test", 1280, 720).build();
 
         match result {
             Ok(mut context) => context.run(&UserApp{}),
-            Err(e) => println!("Error"),
+            Err(e) => println!("Error: {}", e),
         }
     }
 
@@ -42,8 +41,8 @@ mod tests {
         }
         
         ContextBuilder::new("mogl test", 1280, 720)
-        .build().unwrap()
-        .run(&UserApp{});
+            .build().unwrap()
+            .run(&UserApp{});
 
     }
 }
