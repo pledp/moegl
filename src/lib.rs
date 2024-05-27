@@ -1,6 +1,9 @@
 pub mod app;
 pub mod context;
-pub mod error;
+mod error;
+mod window;
+
+pub use error::MoeglError;
 
 #[cfg(test)]
 mod tests {

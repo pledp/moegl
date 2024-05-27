@@ -1,18 +1,22 @@
 use crate::app::App;
-use crate::error::MoeglError;
-
+use crate::MoeglError;
+use crate::window::Window;
 
 /// Context for the application
 pub struct Context {
-    title: String,
+    window: Window,
     width: u32,
     height: u32,
 }
 
 impl Context {
+    
+    /// Create context and init components
     pub(self) fn new(settings: &ContextBuilder) -> Result<Self, MoeglError> {
+        let window = Window::new(settings);
+
         Ok(Self {
-            title: settings.title.to_owned(),
+            window,
             width: settings.width,
             height: settings.height,
         })
@@ -25,15 +29,19 @@ impl Context {
         app.init();
         app.update();
         println!("Running!");
-        println!("{}", self.title);
+
+        // Run window
+        if let Err(e) = self.window.run() {
+            println!("{}", e);
+        }
     }
 }
 
 /// Builder for context
 pub struct ContextBuilder {
-    title: String,
-    width: u32,
-    height: u32,
+    pub title: String,
+    pub width: u32,
+    pub height: u32,
 }
 
 impl ContextBuilder {

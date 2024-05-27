@@ -7,6 +7,8 @@ pub enum MoeglError {
     WindowError,
 
     AppError,
+
+    WinitError,
 }
 
 impl fmt::Display for MoeglError {
@@ -15,6 +17,7 @@ impl fmt::Display for MoeglError {
             MoeglError::ContextError => write!(f, "Context error"),
             MoeglError::WindowError => write!(f, "Error in creating window"),
             MoeglError::AppError => write!(f, "Invalid app"),
+            MoeglError::WinitError => write!(f, "Winit error"),
         }
     }
 }
