@@ -10,6 +10,10 @@ fn main() {
         fn update(&self) {
             println!("update");
         }
+
+        fn draw(&self) {
+            println!("draw");
+        }
     }
     
     let result = ContextBuilder::new("mogl test", 1280, 720).build();

@@ -1,4 +1,4 @@
-use crate::app::App;
+use crate::App;
 use crate::MoeglError;
 use crate::window::Window;
 
@@ -27,13 +27,26 @@ impl Context {
         A: App,
     {
         app.init();
-        app.update();
         println!("Running!");
 
         // Run window
-        if let Err(e) = self.window.run() {
+        if let Err(e) = self.window.run(self, app) {
             println!("{}", e);
         }
+    }
+
+    pub fn update<A>(&mut self, app: &A) 
+    where
+        A: App,
+    {
+        app.update();
+    }
+
+    pub fn draw<A>(&mut self, app: &A) 
+    where 
+        A: App,
+    {
+        app.draw();
     }
 }
 

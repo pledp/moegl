@@ -3,6 +3,7 @@ pub mod context;
 mod error;
 mod window;
 
+pub use app::App;
 pub use error::MoeglError;
 
 #[cfg(test)]
@@ -19,6 +20,10 @@ mod tests {
 
             fn update(&self) {
                 println!("update");
+            }
+
+            fn draw(&self) {
+                println!("draw");
             }
         }
         
@@ -40,6 +45,10 @@ mod tests {
 
             fn update(&self) {
                 println!("update");
+            }
+
+            fn draw(&self) {
+                println!("draw");
             }
         }
         
