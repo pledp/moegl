@@ -4,7 +4,7 @@ use crate::window::Window;
 
 /// Context for the application
 pub struct Context {
-    window: Window,
+    pub(crate) window: Window,
     width: u32,
     height: u32,
 }
@@ -22,31 +22,35 @@ impl Context {
         })
     }
 
-    pub fn run<A>(&mut self, app: &A)
-    where
-        A: App,
-    {
-        app.init();
-        println!("Running!");
-
-        // Run window
-        if let Err(e) = self.window.run(self, app) {
-            println!("{}", e);
-        }
-    }
-
     pub fn update<A>(&mut self, app: &A) 
     where
         A: App,
     {
-        app.update();
+        app.update(self);
     }
 
     pub fn draw<A>(&mut self, app: &A) 
     where 
         A: App,
     {
-        app.draw();
+        app.draw(self);
+    }
+
+    pub fn set_fps(&mut self, fps: u32) {
+        self.window.set_fps(fps);
+    }
+}
+
+pub fn run<A>(mut context: Context, app: &A)
+where
+    A: App,
+{
+    app.init(&mut context);
+    println!("Running!");
+
+    // Run window
+    if let Err(e) = crate::window::run(context, app) {
+        println!("{}", e);
     }
 }
 
@@ -55,6 +59,7 @@ pub struct ContextBuilder {
     pub title: String,
     pub width: u32,
     pub height: u32,
+    pub fps: u32,
 }
 
 impl ContextBuilder {
@@ -71,6 +76,11 @@ impl ContextBuilder {
         }
     }
 
+    pub fn set_fps(&mut self, fps: u32) -> &mut Self {
+        self.fps = fps;
+        self
+    }
+
     /// Build context
     pub fn build(&self) -> Result<Context, MoeglError> {
         Context::new(self)
@@ -83,6 +93,8 @@ impl Default for ContextBuilder {
             title: "mogl".into(),
             width: 1280,
             height: 720,
+
+            fps: 60,
         }
     }
 }

@@ -12,66 +12,71 @@ use crate::MoeglError;
 
 pub(crate) struct Window {
     title: String,
+    fps: u32,
 }
 
 impl Window {
     pub fn new(settings: &ContextBuilder) -> Self {
         Self {
             title: settings.title.to_owned(),
+            fps: settings.fps,
         }
     }
 
-    /// Run event loop
-    pub fn run<A>(&self, context: &Context, app: &A) -> Result<(), MoeglError> 
-    where
-        A: App,
-    {
-        let event_loop = EventLoop::new().unwrap();
-        let window = winit::window::WindowBuilder::new()
-            .with_title(&self.title)
-            .build(&event_loop).unwrap();
+    pub fn set_fps(&mut self, fps: u32) {
+        self.fps = fps;
+    } 
+}
 
-        let mut last_frame_time = Instant::now();
+pub fn run<A>(mut context: Context, app: &A) -> Result<(), MoeglError> 
+where
+    A: App,
+{
+    let event_loop = EventLoop::new().unwrap();
+    let window = winit::window::WindowBuilder::new()
+        .with_title(&context.window.title)
+        .build(&event_loop).unwrap();
 
-        let event_result = event_loop.run(move |event, control_flow| {
-            match event {
-                Event::WindowEvent {
-                    ref event,
-                    window_id,
-                } if window_id == window.id() => match event {
-                    WindowEvent::CloseRequested
-                    | WindowEvent::KeyboardInput {
-                        event:
-                            KeyEvent {
-                                state: ElementState::Pressed,
-                                physical_key: PhysicalKey::Code(KeyCode::Escape),
-                                ..
-                            },
-                        ..
-                    } => control_flow.exit(),
-                    
-                    /// Main loop, run draw, update, etc
-                    WindowEvent::RedrawRequested => {
-                        window.request_redraw();
-                        let now = Instant::now();
+    let mut last_frame_time = Instant::now();
 
-                        if now - last_frame_time >= Duration::from_secs_f64(1.0 / 60.0) {
-                            last_frame_time = now;
+    let event_result = event_loop.run(move |event, control_flow| {
+        match event {
+            Event::WindowEvent {
+                ref event,
+                window_id,
+            } if window_id == window.id() => match event {
+                WindowEvent::CloseRequested
+                | WindowEvent::KeyboardInput {
+                    event:
+                        KeyEvent {
+                            state: ElementState::Pressed,
+                            physical_key: PhysicalKey::Code(KeyCode::Escape),
+                            ..
+                        },
+                    ..
+                } => control_flow.exit(),
+                
+                /// Main loop, run draw, update, etc
+                WindowEvent::RedrawRequested => {
+                    window.request_redraw();
+                    let now = Instant::now();
 
-                            app.update();
-                            app.draw();
-                        }
+                    if now - last_frame_time >= Duration::from_secs_f64(1.0 / context.window.fps as f64) {
+                        last_frame_time = now;
+
+                        context.update(app);
+                        context.draw(app);
                     }
-                    _ => {}
                 }
-
                 _ => {}
             }
-        });
 
-        match event_result {
-            Ok(_) => Ok(()),
-            Err(_) => Err(MoeglError::WinitError),
+            _ => {}
         }
+    });
+
+    match event_result {
+        Ok(_) => Ok(()),
+        Err(_) => Err(MoeglError::WinitError),
     }
 }
