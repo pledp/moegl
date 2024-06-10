@@ -20,7 +20,7 @@ fn main() {
     let result = ContextBuilder::new("mogl test", 1280, 720).build();
 
     match result {
-        Ok(mut context) => moegl::context::run(context, &UserApp{}),
+        Ok(mut context) => context.run(&UserApp{}),
         Err(e) => println!("Error: {}", e),
     }
 }

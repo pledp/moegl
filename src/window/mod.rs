@@ -28,7 +28,7 @@ impl Window {
     } 
 }
 
-pub fn run<A>(mut context: Context, app: &A) -> Result<(), MoeglError> 
+pub fn run<A>(context: &mut Context, app: &A) -> Result<(), MoeglError> 
 where
     A: App,
 {

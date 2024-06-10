@@ -39,18 +39,14 @@ impl Context {
     pub fn set_fps(&mut self, fps: u32) {
         self.window.set_fps(fps);
     }
-}
 
-pub fn run<A>(mut context: Context, app: &A)
-where
-    A: App,
-{
-    app.init(&mut context);
-    println!("Running!");
-
-    // Run window
-    if let Err(e) = crate::window::run(context, app) {
-        println!("{}", e);
+    pub fn run<A>(&mut self, app: &A) 
+    where
+        A: App,
+    {
+        if let Err(e) = crate::window::run(self, app) {
+            println!("{}", e);
+        }
     }
 }
 
