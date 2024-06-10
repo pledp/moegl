@@ -44,6 +44,8 @@ impl Context {
     where
         A: App,
     {
+        app.init(self);
+
         if let Err(e) = crate::window::run(self, app) {
             println!("{}", e);
         }
