@@ -4,7 +4,7 @@ Testing out Rust things.
 
 ## How To Run
 
-Build tests:
+Run window example:
 ```shell
-cargo test
+cargo run --example window
 ```
