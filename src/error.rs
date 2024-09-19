@@ -21,3 +21,5 @@ impl fmt::Display for MoeglError {
         }
     }
 }
+
+impl std::error::Error for MoeglError {}

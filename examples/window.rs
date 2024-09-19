@@ -17,10 +17,14 @@ fn main() {
         }
     }
     
-    let result = ContextBuilder::new("mogl test", 1280, 720).build();
+    let result = ContextBuilder::new()
+        .set_title("moegl test")
+        .build();
 
     match result {
         Ok(mut context) => context.run(&UserApp{}),
         Err(e) => println!("Error: {}", e),
     }
+
+    println!("Finishing up");
 }

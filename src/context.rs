@@ -1,36 +1,42 @@
+use crate::window::Window;
 use crate::App;
 use crate::MoeglError;
-use crate::window::Window;
+
+pub enum GameState {
+    Initializing,
+
+    Running,
+
+    QuitRequested,
+}
 
 /// Context for the application
 pub struct Context {
     pub(crate) window: Window,
-    width: u32,
-    height: u32,
+    pub(crate) state: GameState,
+
 }
 
 impl Context {
-    
     /// Create context and init components
     pub(self) fn new(settings: &ContextBuilder) -> Result<Self, MoeglError> {
         let window = Window::new(settings);
 
-        Ok(Self {
+        Ok(Self { 
             window,
-            width: settings.width,
-            height: settings.height,
+            state: GameState::Initializing,
         })
     }
 
-    pub fn update<A>(&mut self, app: &A) 
+    pub fn update<A>(&mut self, app: &A)
     where
         A: App,
     {
         app.update(self);
     }
 
-    pub fn draw<A>(&mut self, app: &A) 
-    where 
+    pub fn draw<A>(&mut self, app: &A)
+    where
         A: App,
     {
         app.draw(self);
@@ -40,11 +46,17 @@ impl Context {
         self.window.set_fps(fps);
     }
 
-    pub fn run<A>(&mut self, app: &A) 
+    pub fn set_gamestate(&mut self, state: GameState) {
+        self.state = state;
+    }
+
+    pub fn run<A>(&mut self, app: &A)
     where
         A: App,
     {
         app.init(self);
+
+        self.set_gamestate(GameState::Running);
 
         if let Err(e) = crate::window::run(self, app) {
             println!("{}", e);
@@ -61,17 +73,26 @@ pub struct ContextBuilder {
 }
 
 impl ContextBuilder {
-    pub fn new<S>(title: S, window_width: u32, window_height: u32) -> Self 
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn set_height(&mut self, height: u32) -> &mut Self {
+        self.height = height;
+        self
+    }
+
+    pub fn set_width(&mut self, width: u32) -> &mut Self {
+        self.width = width;
+        self
+    }
+
+    pub fn set_title<S>(&mut self, title: S) -> &mut Self
     where
         S: Into<String>,
     {
-        Self {
-            title: title.into(),
-            width: window_width,
-            height: window_height,
-
-            ..Self::default()
-        }
+        self.title = title.into();
+        self
     }
 
     pub fn set_fps(&mut self, fps: u32) -> &mut Self {
