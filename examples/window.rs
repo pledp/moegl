@@ -1,4 +1,7 @@
-use moegl::{app::*, context::{Context, ContextBuilder}};
+use moegl::{
+    app::*,
+    context::{Context, ContextBuilder},
+};
 
 fn main() {
     struct UserApp {}
@@ -16,13 +19,11 @@ fn main() {
             println!("draw");
         }
     }
-    
-    let result = ContextBuilder::new()
-        .set_title("moegl test")
-        .build();
+
+    let result = ContextBuilder::new().set_title("moegl test").build();
 
     match result {
-        Ok(mut context) => context.run(&UserApp{}),
+        Ok(mut context) => context.run(&UserApp {}),
         Err(e) => println!("Error: {}", e),
     }
 

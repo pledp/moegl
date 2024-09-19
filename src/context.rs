@@ -14,7 +14,6 @@ pub enum GameState {
 pub struct Context {
     pub(crate) window: Window,
     pub(crate) state: GameState,
-
 }
 
 impl Context {
@@ -22,7 +21,7 @@ impl Context {
     pub(self) fn new(settings: &ContextBuilder) -> Result<Self, MoeglError> {
         let window = Window::new(settings);
 
-        Ok(Self { 
+        Ok(Self {
             window,
             state: GameState::Initializing,
         })

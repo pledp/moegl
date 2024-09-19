@@ -1,4 +1,4 @@
-use std::{time::{Duration, Instant}};
+use std::time::{Duration, Instant};
 
 use winit::{
     event::*,
@@ -29,18 +29,22 @@ impl Window {
 
     pub fn set_fps(&mut self, fps: u32) {
         self.fps = fps;
-    } 
+    }
 }
 
-pub fn run<A>(ctx: &mut Context, app: &A) -> Result<(), MoeglError> 
+pub fn run<A>(ctx: &mut Context, app: &A) -> Result<(), MoeglError>
 where
     A: App,
 {
     let event_loop = EventLoop::new().unwrap();
     let window = winit::window::WindowBuilder::new()
         .with_title(&ctx.window.title)
-        .with_inner_size(winit::dpi::LogicalSize::new(ctx.window.width, ctx.window.height))
-        .build(&event_loop).unwrap();
+        .with_inner_size(winit::dpi::LogicalSize::new(
+            ctx.window.width,
+            ctx.window.height,
+        ))
+        .build(&event_loop)
+        .unwrap();
 
     let mut last_frame_time = Instant::now();
 
@@ -68,13 +72,14 @@ where
                         },
                     ..
                 } => control_flow.exit(),
-                
+
                 // Main loop, run draw, update, etc
                 WindowEvent::RedrawRequested => {
                     window.request_redraw();
                     let now = Instant::now();
 
-                    if now - last_frame_time >= Duration::from_secs_f64(1.0 / ctx.window.fps as f64) {
+                    if now - last_frame_time >= Duration::from_secs_f64(1.0 / ctx.window.fps as f64)
+                    {
                         last_frame_time = now;
 
                         ctx.update(app);
@@ -82,7 +87,7 @@ where
                     }
                 }
                 _ => {}
-            }
+            },
 
             _ => {}
         }
