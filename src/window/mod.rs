@@ -12,7 +12,7 @@ use crate::MoeglError;
 
 pub(crate) struct Window {
     title: String,
-    fps: u32,
+    pub fps: u32,
     width: u32,
     height: u32,
 }
@@ -46,8 +46,6 @@ where
         .build(&event_loop)
         .unwrap();
 
-    let mut last_frame_time = Instant::now();
-
     let event_result = event_loop.run(move |event, control_flow| {
         match ctx.state {
             GameState::QuitRequested => {
@@ -76,15 +74,7 @@ where
                 // Main loop, run draw, update, etc
                 WindowEvent::RedrawRequested => {
                     window.request_redraw();
-                    let now = Instant::now();
-
-                    if now - last_frame_time >= Duration::from_secs_f64(1.0 / ctx.window.fps as f64)
-                    {
-                        last_frame_time = now;
-
-                        ctx.update(app);
-                        ctx.draw(app);
-                    }
+                    ctx.frame_loop(app);
                 }
                 _ => {}
             },

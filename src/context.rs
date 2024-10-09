@@ -1,3 +1,5 @@
+use std::time::{Duration, Instant};
+
 use crate::window::Window;
 use crate::App;
 use crate::MoeglError;
@@ -14,6 +16,7 @@ pub enum GameState {
 pub struct Context {
     pub(crate) window: Window,
     pub(crate) state: GameState,
+    pub timer: Timer,
 }
 
 impl Context {
@@ -24,21 +27,23 @@ impl Context {
         Ok(Self {
             window,
             state: GameState::Initializing,
+
+            timer: Timer::new(),
         })
     }
 
-    pub fn update<A>(&mut self, app: &A)
-    where
+    pub fn frame_loop<A>(&mut self, app: &A)
+    where 
         A: App,
     {
-        app.update(self);
-    }
+        if(self.timer.should_start_loop(self.window.fps)) {
+            self.update(app);
+            self.draw(app);
 
-    pub fn draw<A>(&mut self, app: &A)
-    where
-        A: App,
-    {
-        app.draw(self);
+            self.timer.stop_loop();
+        }
+
+    
     }
 
     pub fn set_fps(&mut self, fps: u32) {
@@ -60,6 +65,53 @@ impl Context {
         if let Err(e) = crate::window::run(self, app) {
             println!("{}", e);
         }
+    }
+
+    fn update<A>(&mut self, app: &A)
+    where
+        A: App,
+    {
+
+        app.update(self);
+    }
+
+    fn draw<A>(&mut self, app: &A)
+    where
+        A: App,
+    {
+        app.draw(self);
+    }
+}
+
+pub struct Timer {
+    pub total_time: f64,
+    pub delta_time: f64,
+
+    last_frame_time: Instant
+}
+
+impl Timer {
+    fn new() -> Self {
+        Timer {
+            total_time: 0.0,
+            delta_time: 0.0,
+            last_frame_time: Instant::now(),
+        }
+    }
+
+    pub(self) fn should_start_loop(&mut self, fps: u32) -> bool {
+        let now = Instant::now();
+
+        now - self.last_frame_time >= Duration::from_secs_f64(1.0 / fps as f64)
+    }
+
+    pub(self) fn stop_loop(&mut self) {
+        let now = Instant::now();
+
+        self.total_time += (now - self.last_frame_time).as_secs_f64();
+        self.delta_time = (now - self.last_frame_time).as_secs_f64();
+
+        self.last_frame_time = now;
     }
 }
 

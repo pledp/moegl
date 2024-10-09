@@ -3,23 +3,29 @@ use moegl::{
     context::{Context, ContextBuilder},
 };
 
-fn main() {
-    struct UserApp {}
-    impl App for UserApp {
-        fn init(&self, ctx: &mut Context) {
-            ctx.set_fps(2);
-            println!("init");
-        }
+use log::error;
+use env_logger;
 
-        fn update(&self, ctx: &mut Context) {
-            println!("update");
-        }
-
-        fn draw(&self, ctx: &mut Context) {
-            println!("draw");
-        }
+struct UserApp {}
+impl App for UserApp {
+    fn init(&self, ctx: &mut Context) {
+        ctx.set_fps(2);
+        println!("init");
+        error!("test");
     }
 
+    fn update(&self, ctx: &mut Context) {
+        println!("{}", ctx.timer.delta_time);
+        println!("update");
+    }
+
+    fn draw(&self, ctx: &mut Context) {
+        println!("draw");
+    }
+}
+
+fn main() {
+    env_logger::init();
     let result = ContextBuilder::new().set_title("moegl test").build();
 
     match result {
