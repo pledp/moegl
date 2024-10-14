@@ -3,7 +3,6 @@ use moegl::{
     context::{Context, ContextBuilder},
 };
 
-
 struct UserApp {}
 impl App for UserApp {
     fn init(&self, ctx: &mut Context) {

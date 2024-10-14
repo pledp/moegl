@@ -33,7 +33,7 @@ impl Context {
     }
 
     pub(crate) fn frame_loop<A>(&mut self, app: &A)
-    where 
+    where
         A: App,
     {
         if self.timer.should_start_loop(self.window.fps) {
@@ -42,8 +42,6 @@ impl Context {
 
             self.timer.stop_loop();
         }
-
-    
     }
 
     pub fn set_fps(&mut self, fps: u32) {
@@ -71,7 +69,6 @@ impl Context {
     where
         A: App,
     {
-
         app.update(self);
     }
 
@@ -87,7 +84,7 @@ pub struct Timer {
     pub total_time: f64,
     pub delta_time: f64,
 
-    last_frame_time: Instant
+    last_frame_time: Instant,
 }
 
 impl Timer {

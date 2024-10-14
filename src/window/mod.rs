@@ -5,9 +5,9 @@ use winit::{
 };
 
 use crate::context::{Context, ContextBuilder, GameState};
+use crate::graphics::GraphicsContext;
 use crate::App;
 use crate::MoeglError;
-use crate::graphics::GraphicsContext;
 
 pub(crate) struct Window {
     title: String,
@@ -45,9 +45,7 @@ where
         .build(&event_loop)
         .unwrap();
 
-    
     let graphics_context = pollster::block_on(GraphicsContext::new(&window));
-    
 
     let event_result = event_loop.run(move |event, control_flow| {
         match ctx.state {
@@ -59,7 +57,10 @@ where
         }
 
         match event {
-            Event::WindowEvent { ref event, window_id: _ } => match event {
+            Event::WindowEvent {
+                ref event,
+                window_id: _,
+            } => match event {
                 WindowEvent::CloseRequested
                 | WindowEvent::KeyboardInput {
                     event:
