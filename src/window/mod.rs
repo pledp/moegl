@@ -1,5 +1,3 @@
-use std::time::{Duration, Instant};
-
 use winit::{
     event::*,
     event_loop::EventLoop,
@@ -9,6 +7,7 @@ use winit::{
 use crate::context::{Context, ContextBuilder, GameState};
 use crate::App;
 use crate::MoeglError;
+use crate::graphics::GraphicsContext;
 
 pub(crate) struct Window {
     title: String,
@@ -46,6 +45,10 @@ where
         .build(&event_loop)
         .unwrap();
 
+    
+    let graphics_context = pollster::block_on(GraphicsContext::new(&window));
+    
+
     let event_result = event_loop.run(move |event, control_flow| {
         match ctx.state {
             GameState::QuitRequested => {
@@ -56,10 +59,7 @@ where
         }
 
         match event {
-            Event::WindowEvent {
-                ref event,
-                window_id,
-            } if window_id == window.id() => match event {
+            Event::WindowEvent { ref event, window_id: _ } => match event {
                 WindowEvent::CloseRequested
                 | WindowEvent::KeyboardInput {
                     event:
@@ -73,7 +73,7 @@ where
 
                 // Main loop, run draw, update, etc
                 WindowEvent::RedrawRequested => {
-                    window.request_redraw();
+                    graphics_context.window().request_redraw();
                     ctx.frame_loop(app);
                 }
                 _ => {}

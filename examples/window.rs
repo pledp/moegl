@@ -3,15 +3,12 @@ use moegl::{
     context::{Context, ContextBuilder},
 };
 
-use log::error;
-use env_logger;
 
 struct UserApp {}
 impl App for UserApp {
     fn init(&self, ctx: &mut Context) {
         ctx.set_fps(2);
         println!("init");
-        error!("test");
     }
 
     fn update(&self, ctx: &mut Context) {

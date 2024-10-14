@@ -32,11 +32,11 @@ impl Context {
         })
     }
 
-    pub fn frame_loop<A>(&mut self, app: &A)
+    pub(crate) fn frame_loop<A>(&mut self, app: &A)
     where 
         A: App,
     {
-        if(self.timer.should_start_loop(self.window.fps)) {
+        if self.timer.should_start_loop(self.window.fps) {
             self.update(app);
             self.draw(app);
 
