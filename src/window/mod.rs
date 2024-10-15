@@ -10,10 +10,10 @@ use crate::App;
 use crate::MoeglError;
 
 pub(crate) struct Window {
-    title: String,
+    pub title: String,
     pub fps: u32,
-    width: u32,
-    height: u32,
+    pub width: u32,
+    pub height: u32,
 }
 
 impl Window {
@@ -31,22 +31,10 @@ impl Window {
     }
 }
 
-pub fn run<A>(ctx: &mut Context, app: &A) -> Result<(), MoeglError>
+pub fn run<A>(ctx: &mut Context, app: &A, mut event_loop: EventLoop<()>, mut graphics_context: GraphicsContext) -> Result<(), MoeglError>
 where
     A: App,
 {
-    let event_loop = EventLoop::new().unwrap();
-    let window = winit::window::WindowBuilder::new()
-        .with_title(&ctx.window.title)
-        .with_inner_size(winit::dpi::LogicalSize::new(
-            ctx.window.width,
-            ctx.window.height,
-        ))
-        .build(&event_loop)
-        .unwrap();
-
-    let graphics_context = pollster::block_on(GraphicsContext::new(&window));
-
     let event_result = event_loop.run(move |event, control_flow| {
         match ctx.state {
             GameState::QuitRequested => {
@@ -57,10 +45,7 @@ where
         }
 
         match event {
-            Event::WindowEvent {
-                ref event,
-                window_id: _,
-            } => match event {
+            Event::WindowEvent { ref event, window_id: _, } => match event {
                 WindowEvent::CloseRequested
                 | WindowEvent::KeyboardInput {
                     event:
@@ -72,10 +57,18 @@ where
                     ..
                 } => control_flow.exit(),
 
+                WindowEvent::Resized(physical_size) => {
+                    graphics_context.resize(*physical_size);
+                }
+
+                WindowEvent::CursorMoved { device_id, position } => {
+                    todo!();
+                }
+
                 // Main loop, run draw, update, etc
                 WindowEvent::RedrawRequested => {
                     graphics_context.window().request_redraw();
-                    ctx.frame_loop(app);
+                    ctx.frame_loop(app, &mut graphics_context);
                 }
                 _ => {}
             },
