@@ -31,10 +31,12 @@ impl Window {
     }
 }
 
-pub fn run<A>(ctx: &mut Context, app: &A, mut event_loop: EventLoop<()>, mut graphics_context: GraphicsContext) -> Result<(), MoeglError>
+pub fn run<A>(ctx: &mut Context, app: &A) -> Result<(), MoeglError>
 where
     A: App,
 {
+    let event_loop = ctx.event_loop.take().unwrap();
+
     let event_result = event_loop.run(move |event, control_flow| {
         match ctx.state {
             GameState::QuitRequested => {
@@ -58,7 +60,7 @@ where
                 } => control_flow.exit(),
 
                 WindowEvent::Resized(physical_size) => {
-                    graphics_context.resize(*physical_size);
+                    ctx.graphics_context.resize(*physical_size);
                 }
                 
                 /*
@@ -69,8 +71,8 @@ where
 
                 // Main loop, run draw, update, etc
                 WindowEvent::RedrawRequested => {
-                    graphics_context.window().request_redraw();
-                    ctx.frame_loop(app, &mut graphics_context);
+                    ctx.graphics_context.window().request_redraw();
+                    ctx.frame_loop(app);
                 }
                 _ => {}
             },

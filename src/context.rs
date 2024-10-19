@@ -25,6 +25,9 @@ pub struct Context {
     pub(crate) window: Window,
     pub(crate) state: GameState,
     pub timer: Timer,
+
+    pub(crate) event_loop: Option<EventLoop<()>>,
+    pub graphics_context: GraphicsContext,
 }
 
 impl Context {
@@ -32,21 +35,37 @@ impl Context {
     pub(self) fn new(settings: &ContextBuilder) -> Result<Self, MoeglError> {
         let window = Window::new(settings);
 
+        let event_loop = EventLoop::new().unwrap();
+
+        let winit_window = winit::window::WindowBuilder::new()
+        .with_title(&settings.title)
+        .with_inner_size(winit::dpi::LogicalSize::new(
+            settings.width,
+            settings.height,
+        ))
+        .build(&event_loop)
+        .unwrap();
+
+        let mut graphics_context = pollster::block_on(GraphicsContext::new(winit_window));
+
         Ok(Self {
             window,
             state: GameState::Initializing,
 
             timer: Timer::new(),
+
+            event_loop: Some(event_loop),
+            graphics_context,
         })
     }
 
-    pub(crate) fn frame_loop<A>(&mut self, app: &A, graphics_context: &mut GraphicsContext)
+    pub(crate) fn frame_loop<A>(&mut self, app: &A)
     where
         A: App,
     {
         if self.timer.should_start_loop(self.window.fps) {
             self.update(app);
-            self.draw(app, graphics_context);
+            self.draw(app);
 
             self.timer.stop_loop();
         }
@@ -66,22 +85,9 @@ impl Context {
     {
         app.init(self);
 
-        let event_loop = EventLoop::new().unwrap();
-
-        let window = winit::window::WindowBuilder::new()
-        .with_title(&self.window.title)
-        .with_inner_size(winit::dpi::LogicalSize::new(
-            self.window.width,
-            self.window.height,
-        ))
-        .build(&event_loop)
-        .unwrap();
-
-        let mut graphics_context = pollster::block_on(GraphicsContext::new(&window));
-
         self.set_gamestate(GameState::Running);
 
-        if let Err(e) = crate::window::run(self, app, event_loop, graphics_context) {
+        if let Err(e) = crate::window::run(self, app) {
             println!("{}", e);
         }
     }
@@ -93,16 +99,16 @@ impl Context {
         app.update(self);
     }
 
-    fn draw<A>(&mut self, app: &A, graphics_context: &mut GraphicsContext)
+    fn draw<A>(&mut self, app: &A)
     where
         A: App,
     {
         app.draw(self);
 
-        match graphics_context.render() {
+        match self.graphics_context.render() {
             Ok(_) => {}
 
-            Err(wgpu::SurfaceError::Lost) => graphics_context.resize(graphics_context.size),
+            Err(wgpu::SurfaceError::Lost) => self.graphics_context.resize(self.graphics_context.size),
 
             Err(e) => eprint!("{:?}", e),
         }

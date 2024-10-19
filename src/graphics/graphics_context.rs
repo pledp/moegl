@@ -1,19 +1,23 @@
+use std::sync::Arc;
+
 use winit::window::Window;
 
-pub struct GraphicsContext<'a> {
-    surface: wgpu::Surface<'a>,
+pub struct GraphicsContext {
+    surface: wgpu::Surface<'static>,
     device: wgpu::Device,
     queue: wgpu::Queue,
     config: wgpu::SurfaceConfiguration,
     pub size: winit::dpi::PhysicalSize<u32>,
 
-    window: &'a Window,
+    window: Arc<Window>,
 
     red: f32,
 }
 
-impl<'a> GraphicsContext<'a> {
-    pub async fn new(window: &'a Window) -> GraphicsContext<'a> {
+impl GraphicsContext {
+    pub async fn new(window: Window) -> GraphicsContext {
+        let window = Arc::new(window);
+
         let size = window.inner_size();
 
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
@@ -24,7 +28,7 @@ impl<'a> GraphicsContext<'a> {
             ..Default::default()
         });
 
-        let surface = instance.create_surface(window).unwrap();
+        let surface = instance.create_surface(window.clone()).unwrap();
 
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
