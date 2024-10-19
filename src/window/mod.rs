@@ -60,10 +60,12 @@ where
                 WindowEvent::Resized(physical_size) => {
                     graphics_context.resize(*physical_size);
                 }
-
+                
+                /*
                 WindowEvent::CursorMoved { device_id, position } => {
                     todo!();
                 }
+                */
 
                 // Main loop, run draw, update, etc
                 WindowEvent::RedrawRequested => {
