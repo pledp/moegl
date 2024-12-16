@@ -94,11 +94,15 @@ impl GraphicsContext {
         self.red += 0.001;
 
         let output = self.surface.get_current_texture()?;
-        let view = output.texture.create_view(&wgpu::TextureViewDescriptor::default());
+        let view = output
+            .texture
+            .create_view(&wgpu::TextureViewDescriptor::default());
 
-        let mut encoder = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
-            label: Some("Render Encoder"),
-        });
+        let mut encoder = self
+            .device
+            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                label: Some("Render Encoder"),
+            });
 
         {
             let _render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -121,11 +125,11 @@ impl GraphicsContext {
                 timestamp_writes: None,
             });
         }
-    
+
         // submit will accept anything that implements IntoIter
         self.queue.submit(std::iter::once(encoder.finish()));
         output.present();
-    
+
         Ok(())
     }
 

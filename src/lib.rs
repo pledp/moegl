@@ -1,8 +1,8 @@
 pub mod app;
 pub mod context;
-mod input;
 mod error;
 mod graphics;
+pub mod input;
 mod window;
 
 pub use app::App;

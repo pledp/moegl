@@ -6,11 +6,11 @@ use winit::{
     keyboard::{KeyCode, PhysicalKey},
 };
 
+use crate::graphics::GraphicsContext;
+use crate::input::Keyboard;
 use crate::window::Window;
 use crate::App;
 use crate::MoeglError;
-use crate::graphics::GraphicsContext;
-
 
 pub enum GameState {
     Initializing,
@@ -25,6 +25,7 @@ pub struct Context {
     pub(crate) window: Window,
     pub(crate) state: GameState,
     pub timer: Timer,
+    pub keyboard: Keyboard,
 
     pub(crate) event_loop: Option<EventLoop<()>>,
     pub graphics_context: GraphicsContext,
@@ -33,18 +34,19 @@ pub struct Context {
 impl Context {
     /// Create context and init components
     pub(self) fn new(settings: &ContextBuilder) -> Result<Self, MoeglError> {
+        /// TODO: Seperate wgpu and winit things completely from Context
         let window = Window::new(settings);
 
         let event_loop = EventLoop::new().unwrap();
 
         let winit_window = winit::window::WindowBuilder::new()
-        .with_title(&settings.title)
-        .with_inner_size(winit::dpi::LogicalSize::new(
-            settings.width,
-            settings.height,
-        ))
-        .build(&event_loop)
-        .unwrap();
+            .with_title(&settings.title)
+            .with_inner_size(winit::dpi::LogicalSize::new(
+                settings.width,
+                settings.height,
+            ))
+            .build(&event_loop)
+            .unwrap();
 
         let mut graphics_context = pollster::block_on(GraphicsContext::new(winit_window));
 
@@ -53,6 +55,7 @@ impl Context {
             state: GameState::Initializing,
 
             timer: Timer::new(),
+            keyboard: Keyboard::new(),
 
             event_loop: Some(event_loop),
             graphics_context,
@@ -68,6 +71,7 @@ impl Context {
             self.draw(app);
 
             self.timer.stop_loop();
+            self.keyboard.reset_timestep();
         }
     }
 
@@ -108,7 +112,9 @@ impl Context {
         match self.graphics_context.render() {
             Ok(_) => {}
 
-            Err(wgpu::SurfaceError::Lost) => self.graphics_context.resize(self.graphics_context.size),
+            Err(wgpu::SurfaceError::Lost) => {
+                self.graphics_context.resize(self.graphics_context.size)
+            }
 
             Err(e) => eprint!("{:?}", e),
         }

@@ -1,11 +1,9 @@
 use winit::{
     event::*,
-    event_loop::EventLoop,
     keyboard::{KeyCode, PhysicalKey},
 };
 
 use crate::context::{Context, ContextBuilder, GameState};
-use crate::graphics::GraphicsContext;
 use crate::App;
 use crate::MoeglError;
 
@@ -47,7 +45,10 @@ where
         }
 
         match event {
-            Event::WindowEvent { ref event, window_id: _, } => match event {
+            Event::WindowEvent {
+                ref event,
+                window_id: _,
+            } => match event {
                 WindowEvent::CloseRequested
                 | WindowEvent::KeyboardInput {
                     event:
@@ -59,16 +60,21 @@ where
                     ..
                 } => control_flow.exit(),
 
+                WindowEvent::KeyboardInput { event, .. } => {
+                    if let PhysicalKey::Code(code) = event.physical_key {
+                        ctx.keyboard.handle_input(event, code);
+                    }
+                }
+
                 WindowEvent::Resized(physical_size) => {
                     ctx.graphics_context.resize(*physical_size);
                 }
-                
+
                 /*
                 WindowEvent::CursorMoved { device_id, position } => {
                     todo!();
                 }
                 */
-
                 // Main loop, run draw, update, etc
                 WindowEvent::RedrawRequested => {
                     ctx.graphics_context.window().request_redraw();

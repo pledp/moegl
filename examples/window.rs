@@ -1,6 +1,7 @@
 use moegl::{
     app::*,
     context::{Context, ContextBuilder},
+    input::KeyCode,
 };
 
 struct UserApp {}
@@ -11,13 +12,10 @@ impl App for UserApp {
     }
 
     fn update(&self, ctx: &mut Context) {
-        println!("{}", ctx.timer.delta_time);
-        println!("update");
+        println!("{},", ctx.keyboard.timestep_is_pressed(&KeyCode::KeyA));
     }
 
-    fn draw(&self, ctx: &mut Context) {
-        println!("draw");
-    }
+    fn draw(&self, ctx: &mut Context) {}
 }
 
 fn main() {
