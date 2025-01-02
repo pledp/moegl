@@ -1,4 +1,5 @@
 use std::time::{Duration, Instant};
+use std::sync::Arc;
 
 use winit::{
     event::*,
@@ -11,6 +12,8 @@ use crate::input::Keyboard;
 use crate::window::Window;
 use crate::App;
 use crate::MoeglError;
+use crate::event::SystemStorage;
+use crate::event::System;
 
 pub enum GameState {
     Initializing,
@@ -29,11 +32,13 @@ pub struct Context {
 
     pub(crate) event_loop: Option<EventLoop<()>>,
     pub graphics_context: GraphicsContext,
+
+    systems: Vec<SystemStorage>,
 }
 
 impl Context {
     /// Create context and init components
-    pub(self) fn new(settings: &ContextBuilder) -> Result<Self, MoeglError> {
+    pub(self) fn new(settings: &mut ContextBuilder) -> Result<Self, MoeglError> {
         /// TODO: Seperate wgpu and winit things completely from Context
         let window = Window::new(settings);
 
@@ -50,6 +55,13 @@ impl Context {
 
         let mut graphics_context = pollster::block_on(GraphicsContext::new(winit_window));
 
+        let mut systems = Vec::new();
+        let app = settings.app.take().unwrap();
+        let app_system = SystemStorage::new(app);
+
+        systems.push(app_system);
+        
+
         Ok(Self {
             window,
             state: GameState::Initializing,
@@ -59,6 +71,8 @@ impl Context {
 
             event_loop: Some(event_loop),
             graphics_context,
+
+            systems,
         })
     }
 
@@ -155,10 +169,11 @@ impl Timer {
 
 /// Builder for context
 pub struct ContextBuilder {
-    pub title: String,
-    pub width: u32,
-    pub height: u32,
-    pub fps: u32,
+    pub(crate) title: String,
+    pub(crate) width: u32,
+    pub(crate) height: u32,
+    pub(crate) fps: u32,
+    pub(crate) app: Option<Box<dyn System>>,
 }
 
 impl ContextBuilder {
@@ -166,17 +181,17 @@ impl ContextBuilder {
         Self::default()
     }
 
-    pub fn set_height(&mut self, height: u32) -> &mut Self {
+    pub fn with_height(&mut self, height: u32) -> &mut Self {
         self.height = height;
         self
     }
 
-    pub fn set_width(&mut self, width: u32) -> &mut Self {
+    pub fn with_width(&mut self, width: u32) -> &mut Self {
         self.width = width;
         self
     }
 
-    pub fn set_title<S>(&mut self, title: S) -> &mut Self
+    pub fn with_title<S>(&mut self, title: S) -> &mut Self
     where
         S: Into<String>,
     {
@@ -184,13 +199,21 @@ impl ContextBuilder {
         self
     }
 
-    pub fn set_fps(&mut self, fps: u32) -> &mut Self {
+    pub fn with_fps(&mut self, fps: u32) -> &mut Self {
         self.fps = fps;
         self
     }
 
+    pub fn with_app<A>(&mut self, app: A) -> &mut Self 
+    where 
+        A: System + 'static,
+    {
+        self.app = Some(Box::new(app));
+        self
+    }
+
     /// Build context
-    pub fn build(&self) -> Result<Context, MoeglError> {
+    pub fn build(&mut self) -> Result<Context, MoeglError> {
         Context::new(self)
     }
 }
@@ -203,6 +226,7 @@ impl Default for ContextBuilder {
             height: 720,
 
             fps: 60,
+            app: None,
         }
     }
 }
