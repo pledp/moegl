@@ -1,10 +1,34 @@
 pub mod app;
-pub mod context;
 mod error;
-pub mod event;
 mod graphics;
 pub mod input;
 mod window;
 
-pub use app::App;
 pub use error::MoeglError;
+
+mod tests {
+    use crate::{
+        app::*,
+        app::{Context, ContextBuilder},
+    };
+
+    #[test]
+    fn plugin_test() {
+        struct UserApp {}
+        impl Plugin for UserApp {
+            fn init(&mut self, ctx: &mut Context) {
+
+            }
+        
+            fn update(&mut self, ctx: &mut Context) {
+            }
+        
+        }
+        
+        let result = ContextBuilder::new()
+            .with_title("moegl test")
+            .with_plugin(crate::input::InputPlugin::default())
+            .with_app(UserApp {})
+            .build();
+    }
+}

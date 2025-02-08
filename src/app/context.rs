@@ -5,15 +5,14 @@ use winit::{
     event::*,
     event_loop::EventLoop,
     keyboard::{KeyCode, PhysicalKey},
+    event_loop::EventLoopBuilder,
 };
 
 use crate::graphics::GraphicsContext;
 use crate::input::Keyboard;
 use crate::window::Window;
-use crate::App;
 use crate::MoeglError;
-use crate::event::SystemStorage;
-use crate::event::System;
+use crate::app::Plugin;
 
 pub enum GameState {
     Initializing,
@@ -28,12 +27,11 @@ pub struct Context {
     pub(crate) window: Window,
     pub(crate) state: GameState,
     pub timer: Timer,
-    pub keyboard: Keyboard,
 
     pub(crate) event_loop: Option<EventLoop<()>>,
     pub graphics_context: GraphicsContext,
 
-    systems: Vec<SystemStorage>,
+    plugins: Option<Vec<Box<dyn Plugin>>>,
 }
 
 impl Context {
@@ -42,7 +40,16 @@ impl Context {
         /// TODO: Seperate wgpu and winit things completely from Context
         let window = Window::new(settings);
 
-        let event_loop = EventLoop::new().unwrap();
+        let mut event_loop_builder = EventLoopBuilder::new();
+        
+        /// TODO: Create winit plugin
+        #[cfg(target_os= "windows")]
+        {
+            use winit::platform::windows::EventLoopBuilderExtWindows;
+            event_loop_builder.with_any_thread(true);
+        }
+
+        let event_loop = event_loop_builder.build().unwrap();
 
         let winit_window = winit::window::WindowBuilder::new()
             .with_title(&settings.title)
@@ -55,37 +62,33 @@ impl Context {
 
         let mut graphics_context = pollster::block_on(GraphicsContext::new(winit_window));
 
-        let mut systems = Vec::new();
-        let app = settings.app.take().unwrap();
-        let app_system = SystemStorage::new(app);
-
-        systems.push(app_system);
+        let plugins = std::mem::take(&mut settings.plugins);
         
-
         Ok(Self {
             window,
             state: GameState::Initializing,
 
             timer: Timer::new(),
-            keyboard: Keyboard::new(),
 
             event_loop: Some(event_loop),
             graphics_context,
 
-            systems,
+            plugins: Some(plugins),
         })
     }
 
-    pub(crate) fn frame_loop<A>(&mut self, app: &A)
-    where
-        A: App,
-    {
+    pub(crate) fn frame_loop(&mut self) {
         if self.timer.should_start_loop(self.window.fps) {
-            self.update(app);
-            self.draw(app);
+
+            let mut plugins = self.plugins.take().unwrap();
+
+            for plugin in plugins.iter_mut() {
+                plugin.update(self);
+            }
+    
+            self.plugins = Some(plugins);
 
             self.timer.stop_loop();
-            self.keyboard.reset_timestep();
         }
     }
 
@@ -97,40 +100,20 @@ impl Context {
         self.state = state;
     }
 
-    pub fn run<A>(&mut self, app: &A)
-    where
-        A: App,
+    pub fn run(&mut self)
     {
-        app.init(self);
+        let mut plugins = self.plugins.take().unwrap();
+
+        for plugin in plugins.iter_mut() {
+            plugin.init(self);
+        }
+
+        self.plugins = Some(plugins);
 
         self.set_gamestate(GameState::Running);
 
-        if let Err(e) = crate::window::run(self, app) {
+        if let Err(e) = crate::window::run(self) {
             println!("{}", e);
-        }
-    }
-
-    fn update<A>(&mut self, app: &A)
-    where
-        A: App,
-    {
-        app.update(self);
-    }
-
-    fn draw<A>(&mut self, app: &A)
-    where
-        A: App,
-    {
-        app.draw(self);
-
-        match self.graphics_context.render() {
-            Ok(_) => {}
-
-            Err(wgpu::SurfaceError::Lost) => {
-                self.graphics_context.resize(self.graphics_context.size)
-            }
-
-            Err(e) => eprint!("{:?}", e),
         }
     }
 }
@@ -173,7 +156,8 @@ pub struct ContextBuilder {
     pub(crate) width: u32,
     pub(crate) height: u32,
     pub(crate) fps: u32,
-    pub(crate) app: Option<Box<dyn System>>,
+
+    pub(crate) plugins: Vec<Box<dyn Plugin>>,
 }
 
 impl ContextBuilder {
@@ -204,11 +188,13 @@ impl ContextBuilder {
         self
     }
 
-    pub fn with_app<A>(&mut self, app: A) -> &mut Self 
-    where 
-        A: System + 'static,
-    {
-        self.app = Some(Box::new(app));
+    pub fn with_plugin<P: Plugin + 'static>(&mut self, plugin: P) -> &mut Self {
+        self.plugins.push(Box::new(plugin));
+        self
+    }
+
+    pub fn with_app<A: Plugin + 'static>(&mut self, app: A) -> &mut Self {
+        self.plugins.push(Box::new(app));
         self
     }
 
@@ -226,7 +212,7 @@ impl Default for ContextBuilder {
             height: 720,
 
             fps: 60,
-            app: None,
+            plugins: Vec::new(),
         }
     }
 }

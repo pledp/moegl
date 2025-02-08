@@ -3,8 +3,7 @@ use winit::{
     keyboard::{KeyCode, PhysicalKey},
 };
 
-use crate::context::{Context, ContextBuilder, GameState};
-use crate::App;
+use crate::app::{Context, ContextBuilder, GameState};
 use crate::MoeglError;
 
 pub(crate) struct Window {
@@ -29,10 +28,7 @@ impl Window {
     }
 }
 
-pub fn run<A>(ctx: &mut Context, app: &A) -> Result<(), MoeglError>
-where
-    A: App,
-{
+pub fn run(ctx: &mut Context) -> Result<(), MoeglError> {
     let event_loop = ctx.event_loop.take().unwrap();
 
     let event_result = event_loop.run(move |event, control_flow| {
@@ -62,7 +58,6 @@ where
 
                 WindowEvent::KeyboardInput { event, .. } => {
                     if let PhysicalKey::Code(code) = event.physical_key {
-                        ctx.keyboard.handle_input(event, code);
                     }
                 }
 
@@ -78,7 +73,7 @@ where
                 // Main loop, run draw, update, etc
                 WindowEvent::RedrawRequested => {
                     ctx.graphics_context.window().request_redraw();
-                    ctx.frame_loop(app);
+                    ctx.frame_loop();
                 }
                 _ => {}
             },

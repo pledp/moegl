@@ -1,29 +1,18 @@
 use moegl::{
     app::*,
-    context::{Context, ContextBuilder},
     input::KeyCode,
-    event::{System, ResizeEvent}
 };
 
 struct UserApp {}
-impl App for UserApp {
-    fn init(&self, ctx: &mut Context) {
+impl Plugin for UserApp {
+    fn init(&mut self, ctx: &mut Context) {
         ctx.set_fps(2);
         println!("init");
     }
 
-    fn update(&self, ctx: &mut Context) {
-        println!("{},", ctx.keyboard.timestep_is_pressed(&KeyCode::KeyA));
+    fn update(&mut self, ctx: &mut Context) {
+        println!("update");
     }
-
-    fn draw(&self, ctx: &mut Context) {}
-}
-
-impl System for UserApp {
-    
-}
-
-fn handle_resize(system: &mut UserApp, event: &ResizeEvent) {
 
 }
 
@@ -37,7 +26,7 @@ fn main() {
     .build();
 
     match result {
-        Ok(mut context) => context.run(&UserApp {}),
+        Ok(mut context) => context.run(),
         Err(e) => println!("Error: {}", e),
     }
 
