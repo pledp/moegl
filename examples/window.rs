@@ -13,10 +13,6 @@ impl Plugin for UserApp {
     fn update(&mut self, ctx: &mut Context) {
         println!("update");
     }
-
-    fn as_any(&self) -> &dyn std::any::Any {
-        self
-    }
 }
 
 fn main() {

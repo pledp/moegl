@@ -21,12 +21,7 @@ mod tests {
             }
         
             fn update(&mut self, ctx: &mut Context) {
-            }
-
-            fn as_any(&self) -> &dyn std::any::Any {
-                self
-            }
-        
+            }        
         }
         
         let result = ContextBuilder::new()

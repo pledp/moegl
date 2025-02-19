@@ -31,10 +31,6 @@ impl Plugin for WinitPlugin {
     fn init(&mut self, ctx: &mut Context) {
         ctx.set_runner(run);
     } 
-    
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
 }
 
 #[derive(Default)]

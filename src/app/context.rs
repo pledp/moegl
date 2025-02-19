@@ -51,7 +51,7 @@ impl Context {
         
         self.plugins.as_ref()?
             .get(index)
-            .and_then(|plugin| plugin.as_any().downcast_ref::<P>())
+            .and_then(|plugin| plugin.downcast_ref::<P>())
     }
 
     pub fn set_runner(&mut self, f: impl FnOnce(Context) -> Result<(), MoeglError> + 'static) {

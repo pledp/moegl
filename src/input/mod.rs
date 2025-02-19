@@ -15,10 +15,6 @@ impl Plugin for InputPlugin {
     fn init(&mut self, ctx: &mut Context) {
         println!("init input plugin");
     }
-
-    fn as_any(&self) -> &dyn std::any::Any {
-        self
-    }
 }
 
 impl Default for InputPlugin {

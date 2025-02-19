@@ -1,12 +1,13 @@
 use std::any::{Any};
+use downcast_rs::{Downcast, impl_downcast};
 
 use crate::app::Context;
 
 
-pub trait Plugin: Any {
+pub trait Plugin: Downcast {
     fn init(&mut self, ctx: &mut Context);
 
     fn update(&mut self, ctx: &mut Context) {}
-
-    fn as_any(&self) -> &dyn Any;
 }
+
+impl_downcast!(Plugin);
