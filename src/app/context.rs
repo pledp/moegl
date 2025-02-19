@@ -1,16 +1,10 @@
 use std::time::{Duration, Instant};
-use std::sync::Arc;
-
-use winit::{
-    event::*,
-    event_loop::EventLoop,
-    keyboard::{KeyCode, PhysicalKey},
-    event_loop::EventLoopBuilder,
-};
+use std::any::{Any, TypeId};
+use std::collections::HashMap;
 
 use crate::graphics::GraphicsContext;
-use crate::input::Keyboard;
 use crate::window::Window;
+use crate::window::WinitPlugin;
 use crate::MoeglError;
 use crate::app::Plugin;
 
@@ -24,61 +18,48 @@ pub enum GameState {
 
 /// Context for the application
 pub struct Context {
-    pub(crate) window: Window,
+    pub target_fps: u32,
     pub(crate) state: GameState,
     pub timer: Timer,
 
-    pub(crate) event_loop: Option<EventLoop<()>>,
-    pub graphics_context: GraphicsContext,
-
     plugins: Option<Vec<Box<dyn Plugin>>>,
+    plugins_types: HashMap<TypeId, usize>,
+
+    runner: Box<dyn FnOnce(Context) -> Result<(), MoeglError>>,
 }
 
 impl Context {
     /// Create context and init components
     pub(self) fn new(settings: &mut ContextBuilder) -> Result<Self, MoeglError> {
-        /// TODO: Seperate wgpu and winit things completely from Context
-        let window = Window::new(settings);
-
-        let mut event_loop_builder = EventLoopBuilder::new();
-        
-        /// TODO: Create winit plugin
-        #[cfg(target_os= "windows")]
-        {
-            use winit::platform::windows::EventLoopBuilderExtWindows;
-            event_loop_builder.with_any_thread(true);
-        }
-
-        let event_loop = event_loop_builder.build().unwrap();
-
-        let winit_window = winit::window::WindowBuilder::new()
-            .with_title(&settings.title)
-            .with_inner_size(winit::dpi::LogicalSize::new(
-                settings.width,
-                settings.height,
-            ))
-            .build(&event_loop)
-            .unwrap();
-
-        let mut graphics_context = pollster::block_on(GraphicsContext::new(winit_window));
-
         let plugins = std::mem::take(&mut settings.plugins);
+        let plugins_types = std::mem::take(&mut settings.plugins_types);
         
         Ok(Self {
-            window,
+            target_fps: settings.fps,
             state: GameState::Initializing,
-
             timer: Timer::new(),
-
-            event_loop: Some(event_loop),
-            graphics_context,
-
             plugins: Some(plugins),
+            plugins_types,
+            runner: Box::new(run_once),
         })
     }
 
+    pub fn get_plugin<P: Plugin + 'static>(&self) -> Option<&P> {
+        let index = self.plugins_types
+            .get(&TypeId::of::<P>()).unwrap().clone();
+
+        
+        self.plugins.as_ref()?
+            .get(index)
+            .and_then(|plugin| plugin.as_any().downcast_ref::<P>())
+    }
+
+    pub fn set_runner(&mut self, f: impl FnOnce(Context) -> Result<(), MoeglError> + 'static) {
+        self.runner = Box::new(f);
+    }
+
     pub(crate) fn frame_loop(&mut self) {
-        if self.timer.should_start_loop(self.window.fps) {
+        if self.timer.should_start_loop(self.target_fps) {
 
             let mut plugins = self.plugins.take().unwrap();
 
@@ -92,30 +73,36 @@ impl Context {
         }
     }
 
-    pub fn set_fps(&mut self, fps: u32) {
-        self.window.set_fps(fps);
+    pub fn set_fps(&mut self, target: u32) {
+        self.target_fps = target;
     }
 
     pub fn set_gamestate(&mut self, state: GameState) {
         self.state = state;
     }
 
-    pub fn run(&mut self)
+    pub fn run(mut self) -> Result<(), MoeglError>
     {
         let mut plugins = self.plugins.take().unwrap();
 
         for plugin in plugins.iter_mut() {
-            plugin.init(self);
+            plugin.init(&mut self);
         }
 
         self.plugins = Some(plugins);
 
         self.set_gamestate(GameState::Running);
 
-        if let Err(e) = crate::window::run(self) {
-            println!("{}", e);
-        }
+        let runner = core::mem::replace(&mut self.runner, Box::new(run_once));
+        let app = self;
+        println!("starting");
+
+        (runner)(app)
     }
+}
+
+fn run_once(mut ctx: Context) -> Result<(), MoeglError> {
+    Err(MoeglError::WinitError)
 }
 
 pub struct Timer {
@@ -158,6 +145,7 @@ pub struct ContextBuilder {
     pub(crate) fps: u32,
 
     pub(crate) plugins: Vec<Box<dyn Plugin>>,
+    pub(crate) plugins_types: HashMap<TypeId, usize>,
 }
 
 impl ContextBuilder {
@@ -190,11 +178,13 @@ impl ContextBuilder {
 
     pub fn with_plugin<P: Plugin + 'static>(&mut self, plugin: P) -> &mut Self {
         self.plugins.push(Box::new(plugin));
+        self.plugins_types.insert(TypeId::of::<P>(), self.plugins.len() - 1);
         self
     }
 
     pub fn with_app<A: Plugin + 'static>(&mut self, app: A) -> &mut Self {
         self.plugins.push(Box::new(app));
+        self.plugins_types.insert(TypeId::of::<A>(), self.plugins.len() - 1);
         self
     }
 
@@ -206,13 +196,18 @@ impl ContextBuilder {
 
 impl Default for ContextBuilder {
     fn default() -> Self {
-        Self {
+        let mut context_builder = ContextBuilder {
             title: "mogl".into(),
             width: 1280,
             height: 720,
 
             fps: 60,
             plugins: Vec::new(),
-        }
+            plugins_types: HashMap::new(),
+        };
+
+        context_builder.with_plugin(WinitPlugin::default());
+
+        context_builder
     }
 }

@@ -1,11 +1,43 @@
+use std::any::{Any};
+
 use winit::{
     event::*,
     keyboard::{KeyCode, PhysicalKey},
+    event_loop::EventLoop,
+    event_loop::EventLoopBuilder,
 };
 
-use crate::app::{Context, ContextBuilder, GameState};
+use crate::app::{Context, ContextBuilder, GameState, Plugin};
 use crate::MoeglError;
+use crate::graphics::GraphicsContext;
 
+
+#[derive(Default)]
+pub struct WinitPlugin {
+    window: Window    
+}
+
+impl WinitPlugin {
+    fn new(settings: &ContextBuilder) -> Self {
+        let window = Window::new(settings);
+
+        WinitPlugin {
+            window
+        }
+    }
+}
+
+impl Plugin for WinitPlugin {
+    fn init(&mut self, ctx: &mut Context) {
+        ctx.set_runner(run);
+    } 
+    
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+}
+
+#[derive(Default)]
 pub(crate) struct Window {
     pub title: String,
     pub fps: u32,
@@ -28,8 +60,32 @@ impl Window {
     }
 }
 
-pub fn run(ctx: &mut Context) -> Result<(), MoeglError> {
-    let event_loop = ctx.event_loop.take().unwrap();
+pub fn run(mut ctx: Context) -> Result<(), MoeglError> {
+    println!("test");
+
+    let mut event_loop_builder = EventLoopBuilder::new();
+    
+    /// TODO: Create winit plugin
+    #[cfg(target_os= "windows")]
+    {
+        use winit::platform::windows::EventLoopBuilderExtWindows;
+        event_loop_builder.with_any_thread(true);
+    }
+
+    let event_loop = event_loop_builder.build().unwrap();
+
+    let window = ctx.get_plugin::<WinitPlugin>().unwrap();
+
+    let winit_window = winit::window::WindowBuilder::new()
+        .with_title("test")
+        .with_inner_size(winit::dpi::LogicalSize::new(
+            50,
+            50,
+        ))
+        .build(&event_loop)
+        .unwrap();
+
+    let mut graphics_context = pollster::block_on(GraphicsContext::new(winit_window));
 
     let event_result = event_loop.run(move |event, control_flow| {
         match ctx.state {
@@ -62,7 +118,7 @@ pub fn run(ctx: &mut Context) -> Result<(), MoeglError> {
                 }
 
                 WindowEvent::Resized(physical_size) => {
-                    ctx.graphics_context.resize(*physical_size);
+                    graphics_context.resize(*physical_size);
                 }
 
                 /*
@@ -72,7 +128,7 @@ pub fn run(ctx: &mut Context) -> Result<(), MoeglError> {
                 */
                 // Main loop, run draw, update, etc
                 WindowEvent::RedrawRequested => {
-                    ctx.graphics_context.window().request_redraw();
+                    graphics_context.window().request_redraw();
                     ctx.frame_loop();
                 }
                 _ => {}

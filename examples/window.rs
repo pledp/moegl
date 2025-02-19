@@ -14,6 +14,9 @@ impl Plugin for UserApp {
         println!("update");
     }
 
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
 }
 
 fn main() {
@@ -21,12 +24,15 @@ fn main() {
     let app = UserApp {};
 
     let result = ContextBuilder::new()
-    .with_title("moegl test")
-    .with_app(app)
-    .build();
+        .with_title("moegl test")
+        .with_app(app)
+        .build();
 
     match result {
-        Ok(mut context) => context.run(),
+        Ok(mut context) => {
+            context.run();
+            ()
+        }
         Err(e) => println!("Error: {}", e),
     }
 
