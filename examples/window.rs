@@ -1,6 +1,8 @@
 use moegl::{
     app::*,
     input::KeyCode,
+    graphics::GraphicsContext,
+    window::WinitPlugin,
 };
 
 struct UserApp {}
@@ -10,8 +12,15 @@ impl Plugin for UserApp {
         println!("init");
     }
 
-    fn update(&mut self, ctx: &mut Context) {
+    fn update(&mut self, ctx: &mut Context, plugin_registry: &mut PluginRegistry) {
+        let window = plugin_registry.get_plugin::<WinitPlugin>().unwrap();
+        println!("{}", window.window.title);
+
         println!("update");
+    }
+
+    fn draw(&mut self, ctx: &mut Context, graphics_ctx: &mut GraphicsContext) {
+
     }
 }
 

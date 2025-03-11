@@ -14,7 +14,7 @@ use crate::graphics::GraphicsContext;
 
 #[derive(Default)]
 pub struct WinitPlugin {
-    window: Window    
+    pub window: Window    
 }
 
 impl WinitPlugin {
@@ -28,13 +28,17 @@ impl WinitPlugin {
 }
 
 impl Plugin for WinitPlugin {
+    fn build(&mut self, settings: &ContextBuilder) {
+        self.window = Window::new(settings);
+    }
+
     fn init(&mut self, ctx: &mut Context) {
         ctx.set_runner(run);
     } 
 }
 
 #[derive(Default)]
-pub(crate) struct Window {
+pub struct Window {
     pub title: String,
     pub fps: u32,
     pub width: u32,
@@ -57,8 +61,6 @@ impl Window {
 }
 
 pub fn run(mut ctx: Context) -> Result<(), MoeglError> {
-    println!("test");
-
     let mut event_loop_builder = EventLoopBuilder::new();
     
     /// TODO: Create winit plugin
@@ -71,9 +73,10 @@ pub fn run(mut ctx: Context) -> Result<(), MoeglError> {
     let event_loop = event_loop_builder.build().unwrap();
 
     let window = ctx.get_plugin::<WinitPlugin>().unwrap();
+    println!("{}", window.window.title);
 
     let winit_window = winit::window::WindowBuilder::new()
-        .with_title("test")
+        .with_title(window.window.title.to_owned())
         .with_inner_size(winit::dpi::LogicalSize::new(
             50,
             50,
@@ -125,7 +128,9 @@ pub fn run(mut ctx: Context) -> Result<(), MoeglError> {
                 // Main loop, run draw, update, etc
                 WindowEvent::RedrawRequested => {
                     graphics_context.window().request_redraw();
-                    ctx.frame_loop();
+                    ctx.frame_loop(&mut graphics_context);
+                    
+                    graphics_context.render();
                 }
                 _ => {}
             },

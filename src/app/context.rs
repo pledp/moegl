@@ -5,6 +5,7 @@ use std::collections::HashMap;
 use crate::graphics::GraphicsContext;
 use crate::window::Window;
 use crate::window::WinitPlugin;
+use crate::app::PluginRegistry;
 use crate::MoeglError;
 use crate::app::Plugin;
 
@@ -22,8 +23,7 @@ pub struct Context {
     pub(crate) state: GameState,
     pub timer: Timer,
 
-    plugins: Option<Vec<Box<dyn Plugin>>>,
-    plugins_types: HashMap<TypeId, usize>,
+    pub(crate) plugin_registry: Option<PluginRegistry>,
 
     runner: Box<dyn FnOnce(Context) -> Result<(), MoeglError>>,
 }
@@ -33,41 +33,47 @@ impl Context {
     pub(self) fn new(settings: &mut ContextBuilder) -> Result<Self, MoeglError> {
         let plugins = std::mem::take(&mut settings.plugins);
         let plugins_types = std::mem::take(&mut settings.plugins_types);
-        
+        let mut plugin_registry = PluginRegistry::from_vecs(plugins, plugins_types);
+
+        for plugin in plugin_registry.plugins.iter_mut() {
+            if let Some(plugin) = plugin.as_mut() {
+                plugin.build(settings);
+            }
+        }
+
         Ok(Self {
             target_fps: settings.fps,
             state: GameState::Initializing,
             timer: Timer::new(),
-            plugins: Some(plugins),
-            plugins_types,
+            plugin_registry: Some(plugin_registry),
             runner: Box::new(run_once),
         })
     }
 
     pub fn get_plugin<P: Plugin + 'static>(&self) -> Option<&P> {
-        let index = self.plugins_types
-            .get(&TypeId::of::<P>()).unwrap().clone();
-
-        
-        self.plugins.as_ref()?
-            .get(index)
-            .and_then(|plugin| plugin.downcast_ref::<P>())
+        let plugins = self.plugin_registry.as_ref().unwrap();
+        plugins.get_plugin()
     }
 
     pub fn set_runner(&mut self, f: impl FnOnce(Context) -> Result<(), MoeglError> + 'static) {
         self.runner = Box::new(f);
     }
 
-    pub(crate) fn frame_loop(&mut self) {
+    pub(crate) fn frame_loop(&mut self, graphics_ctx: &mut GraphicsContext) {
         if self.timer.should_start_loop(self.target_fps) {
 
-            let mut plugins = self.plugins.take().unwrap();
+            let mut plugins = self.plugin_registry.take().unwrap();
 
-            for plugin in plugins.iter_mut() {
-                plugin.update(self);
+            let len = plugins.plugins.len();
+            for i in 0..len {
+                // Temporarily take the plugin to avoid aliasing issues
+                if let Some(mut plugin) = plugins.plugins[i].take() {
+                    plugin.update(self, &mut plugins);
+                    // Put it back after update
+                    plugins.plugins[i] = Some(plugin);
+                }
             }
-    
-            self.plugins = Some(plugins);
+            self.plugin_registry = Some(plugins);
 
             self.timer.stop_loop();
         }
@@ -83,13 +89,18 @@ impl Context {
 
     pub fn run(mut self) -> Result<(), MoeglError>
     {
-        let mut plugins = self.plugins.take().unwrap();
+        let mut plugins = self.plugin_registry.take().unwrap();
 
-        for plugin in plugins.iter_mut() {
-            plugin.init(&mut self);
+        let len = plugins.plugins.len();
+        for i in 0..len {
+            // Temporarily take the plugin to avoid aliasing issues
+            if let Some(mut plugin) = plugins.plugins[i].take() {
+                plugin.init(&mut self);
+                // Put it back after update
+                plugins.plugins[i] = Some(plugin);
+            }
         }
-
-        self.plugins = Some(plugins);
+        self.plugin_registry = Some(plugins);
 
         self.set_gamestate(GameState::Running);
 
@@ -144,7 +155,7 @@ pub struct ContextBuilder {
     pub(crate) height: u32,
     pub(crate) fps: u32,
 
-    pub(crate) plugins: Vec<Box<dyn Plugin>>,
+    pub(crate) plugins: Vec<Option<Box<dyn Plugin>>>,
     pub(crate) plugins_types: HashMap<TypeId, usize>,
 }
 
@@ -177,13 +188,13 @@ impl ContextBuilder {
     }
 
     pub fn with_plugin<P: Plugin + 'static>(&mut self, plugin: P) -> &mut Self {
-        self.plugins.push(Box::new(plugin));
+        self.plugins.push(Some(Box::new(plugin)));
         self.plugins_types.insert(TypeId::of::<P>(), self.plugins.len() - 1);
         self
     }
 
     pub fn with_app<A: Plugin + 'static>(&mut self, app: A) -> &mut Self {
-        self.plugins.push(Box::new(app));
+        self.plugins.push(Some(Box::new(app)));
         self.plugins_types.insert(TypeId::of::<A>(), self.plugins.len() - 1);
         self
     }

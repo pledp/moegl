@@ -1,8 +1,8 @@
 pub mod app;
 mod error;
-mod graphics;
+pub mod graphics;
 pub mod input;
-mod window;
+pub mod window;
 
 pub use error::MoeglError;
 
