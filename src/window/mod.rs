@@ -3,7 +3,7 @@ use std::any::{Any};
 use winit::{
     event::*,
     keyboard::{KeyCode, PhysicalKey},
-    event_loop::EventLoop,
+    event_loop:: {EventLoop, ControlFlow},
     event_loop::EventLoopBuilder,
 };
 
@@ -71,6 +71,7 @@ pub fn run(mut ctx: Context) -> Result<(), MoeglError> {
     }
 
     let event_loop = event_loop_builder.build().unwrap();
+    event_loop.set_control_flow(ControlFlow::Poll);
 
     let window = ctx.get_plugin::<WinitPlugin>().unwrap();
     println!("{}", window.window.title);
@@ -127,13 +128,15 @@ pub fn run(mut ctx: Context) -> Result<(), MoeglError> {
                 */
                 // Main loop, run draw, update, etc
                 WindowEvent::RedrawRequested => {
-                    graphics_context.window().request_redraw();
                     ctx.frame_loop(&mut graphics_context);
                     
                     graphics_context.render();
                 }
                 _ => {}
             },
+            Event::AboutToWait => {
+                graphics_context.window().request_redraw();                
+            }
 
             _ => {}
         }
