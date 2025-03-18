@@ -25,7 +25,6 @@ impl Plugin for UserApp {
 }
 
 fn main() {
-    env_logger::init();
     let app = UserApp {};
 
     let result = ContextBuilder::new()

@@ -1,4 +1,6 @@
-use std::any::{Any};
+use std::any::Any;
+
+use nalgebra_glm as glm;
 
 use winit::{
     event::*,
@@ -130,7 +132,11 @@ pub fn run(mut ctx: Context) -> Result<(), MoeglError> {
                 WindowEvent::RedrawRequested => {
                     ctx.frame_loop(&mut graphics_context);
                     
-                    graphics_context.render();
+                    // TODO: Make idiomatic
+                    let mut render_data = graphics_context.start_draw().unwrap();
+                    graphics_context.clear(&mut render_data, glm::vec3(1.0, 1.0, 1.0));
+                    graphics_context.render(&mut render_data);
+                    graphics_context.end_draw(render_data);
                 }
                 _ => {}
             },
