@@ -75,20 +75,22 @@ pub fn run(mut ctx: Context) -> Result<(), MoeglError> {
     let event_loop = event_loop_builder.build().unwrap();
     event_loop.set_control_flow(ControlFlow::Poll);
 
-    let window = ctx.get_plugin::<WinitPlugin>().unwrap();
-    println!("{}", window.window.title);
+    /// Get winit config and initialize window
+    let window_config = ctx.get_plugin::<WinitPlugin>().unwrap();
 
     let winit_window = winit::window::WindowBuilder::new()
-        .with_title(window.window.title.to_owned())
+        .with_title(window_config.window.title.to_owned())
         .with_inner_size(winit::dpi::LogicalSize::new(
-            50,
-            50,
+            window_config.window.width,
+            window_config.window.height,
         ))
         .build(&event_loop)
         .unwrap();
 
     let mut graphics_context = pollster::block_on(GraphicsContext::new(winit_window));
 
+
+    /// Begin main winit event loop
     let event_result = event_loop.run(move |event, control_flow| {
         match ctx.state {
             GameState::QuitRequested => {
