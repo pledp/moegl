@@ -55,6 +55,11 @@ impl Context {
         plugins.get_plugin()
     }
 
+    pub fn get_plugin_mut<P: Plugin + 'static>(&mut self) -> Option<&mut P> {
+        let plugins = self.plugin_registry.as_mut().unwrap();
+        plugins.get_plugin_mut()
+    }
+
     pub fn set_runner(&mut self, f: impl FnOnce(Context) -> Result<(), MoeglError> + 'static) {
         self.runner = Box::new(f);
     }

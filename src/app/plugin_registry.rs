@@ -32,6 +32,15 @@ impl PluginRegistry {
             .and_then(|plugin| plugin.as_ref()?.downcast_ref::<P>())
     }
 
+    pub fn get_plugin_mut<P: Plugin + 'static>(&mut self) -> Option<&mut P> {
+        let index = self.plugins_types
+            .get(&TypeId::of::<P>()).unwrap().clone();
+
+        self.plugins
+            .get_mut(index)
+            .and_then(|plugin| plugin.as_mut()?.downcast_mut::<P>())
+    }
+
     pub(crate) fn register_plugin<P: Plugin + 'static>(&mut self, plugin: P) {
         self.plugins.push(Some(Box::new(plugin)));
         self.plugins_types.insert(TypeId::of::<P>(), self.plugins.len() - 1);
