@@ -1,4 +1,4 @@
-use std::any::{TypeId};
+use std::any::TypeId;
 use std::collections::HashMap;
 
 use crate::app::Plugin;

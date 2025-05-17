@@ -3,8 +3,10 @@ mod error;
 pub mod graphics;
 pub mod input;
 pub mod window;
+mod texture;
 
 pub use error::MoeglError;
+pub use texture::Texture;
 
 mod tests {
     use crate::{
@@ -16,11 +18,11 @@ mod tests {
     fn plugin_test() {
         struct UserApp {}
         impl Plugin for UserApp {
-            fn init(&mut self, ctx: &mut Context) {
+            fn init(&mut self, ctx: &mut Context, plugin_registry: &mut PluginRegistry) {
 
             }
         
-            fn update(&mut self, ctx: &mut Context) {
+            fn update(&mut self, ctx: &mut Context, plugin_registry: &mut PluginRegistry) {
             }        
         }
         

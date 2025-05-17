@@ -65,7 +65,7 @@ impl Window {
 pub fn run(mut ctx: Context) -> Result<(), MoeglError> {
     let mut event_loop_builder = EventLoopBuilder::new();
     
-    /// TODO: Create winit plugin
+    // TODO: Create runner + winit plugin
     #[cfg(target_os= "windows")]
     {
         use winit::platform::windows::EventLoopBuilderExtWindows;
@@ -75,7 +75,7 @@ pub fn run(mut ctx: Context) -> Result<(), MoeglError> {
     let event_loop = event_loop_builder.build().unwrap();
     event_loop.set_control_flow(ControlFlow::Poll);
 
-    /// Get winit config and initialize window
+    // Get winit config and initialize window
     let window_config = ctx.get_plugin::<WinitPlugin>().unwrap();
 
     let winit_window = winit::window::WindowBuilder::new()
@@ -90,7 +90,7 @@ pub fn run(mut ctx: Context) -> Result<(), MoeglError> {
     let mut graphics_context = pollster::block_on(GraphicsContext::new(winit_window));
 
 
-    /// Begin main winit event loop
+    // Begin main winit event loop
     let event_result = event_loop.run(move |event, control_flow| {
         match ctx.state {
             GameState::QuitRequested => {

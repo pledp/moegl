@@ -1,6 +1,36 @@
 use std::sync::Arc;
+
 use nalgebra_glm as glm;
+use wgpu::util::DeviceExt;
 use winit::window::Window;
+
+use crate::Texture;
+
+#[repr(C)]
+#[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
+struct Vertex {
+    pos: [f32; 3],
+    color: [f32; 3],
+}
+
+impl Vertex {
+    const ATTRIBS: [wgpu::VertexAttribute; 2] =
+        wgpu::vertex_attr_array![0 => Float32x3, 1 => Float32x3];
+
+    fn desc() -> wgpu::VertexBufferLayout<'static> {
+        wgpu::VertexBufferLayout {
+            array_stride: std::mem::size_of::<Vertex>() as wgpu::BufferAddress,
+            step_mode: wgpu::VertexStepMode::Vertex,
+            attributes: &Self::ATTRIBS,
+        }
+    }
+}
+
+const VERTICES: &[Vertex] = &[
+    Vertex { pos: [0.0, 0.5, 0.0], color: [1.0, 0.0, 0.0] },
+    Vertex { pos: [-0.5, -0.5, 0.0], color: [0.0, 1.0, 0.0] },
+    Vertex { pos: [0.5, -0.5, 0.0], color: [0.0, 0.0, 1.0] },
+];
 
 pub struct RenderData {
     encoder: wgpu::CommandEncoder,
@@ -16,6 +46,8 @@ pub struct GraphicsContext {
     pub size: winit::dpi::PhysicalSize<u32>,
     render_pipeline: wgpu::RenderPipeline,
     window: Arc<Window>,
+
+    vertex_buffer: wgpu::Buffer,
 }
 
 impl GraphicsContext {
@@ -86,10 +118,22 @@ impl GraphicsContext {
             desired_maximum_frame_latency: 2,
         };
 
+        let diffuse_bytes = include_bytes!("../../assets/images/widow.png");
+        let texture = Texture::from_bytes(diffuse_bytes);
+        
+
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Shader"),
             source: wgpu::ShaderSource::Wgsl(include_str!("../../assets/shaders/shader.wgsl").into()),
         });
+
+        let vertex_buffer = device.create_buffer_init(
+            &wgpu::util::BufferInitDescriptor {
+                label: Some("Vertex Buffer"),
+                contents: bytemuck::cast_slice(VERTICES),
+                usage: wgpu::BufferUsages::VERTEX,
+            }
+        );
 
         let render_pipeline_layout =
         device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
@@ -103,8 +147,11 @@ impl GraphicsContext {
             layout: Some(&render_pipeline_layout),
             vertex: wgpu::VertexState {
                 module: &shader,
-                entry_point: Some("vs_main"), // 1.
-                buffers: &[], // 2.
+                entry_point: Some("vs_main"),
+                // Assign buffers
+                buffers: &[ 
+                    Vertex::desc(),
+                ],
                 compilation_options: wgpu::PipelineCompilationOptions::default(),
             },
             fragment: Some(wgpu::FragmentState { // 3.
@@ -147,10 +194,13 @@ impl GraphicsContext {
             config,
             render_pipeline,
             size,
+            vertex_buffer,
         }
     }
 
     pub fn render(&mut self, render_data: &mut RenderData) {
+        let num_verticies = VERTICES.len() as u32;
+
         let mut render_pass = render_data.encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("Render Pass"),
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
@@ -165,11 +215,10 @@ impl GraphicsContext {
             occlusion_query_set: None,
             timestamp_writes: None,
         });
-
         
         render_pass.set_pipeline(&self.render_pipeline);
-        render_pass.draw(0..3, 0..1);
-    
+        render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+        render_pass.draw(0..num_verticies, 0..1);
     }
 
     pub fn start_draw(&mut self) -> Result<RenderData, wgpu::SurfaceError> {
@@ -178,6 +227,7 @@ impl GraphicsContext {
         let mut encoder = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
             label: Some("Render Encoder"),
         });
+
 
         Ok(RenderData {
             encoder, 
